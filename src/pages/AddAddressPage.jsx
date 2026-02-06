@@ -3,7 +3,7 @@ import { ChevronLeft, MapPin, Home, Briefcase, MapPinned } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 export default function AddAddressPage({ onNavigate }) {
   const { addAddress } = useStore();
@@ -73,8 +73,8 @@ export default function AddAddressPage({ onNavigate }) {
                     type="button"
                     onClick={() => setAddressType(type)}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${addressType === type
-                        ? 'border-[#006A52] bg-[#E8F5F1] text-[#006A52]'
-                        : 'border-[#E5E5E5] text-[#666666] hover:border-[#006A52]/50'
+                      ? 'border-[#006A52] bg-[#E8F5F1] text-[#006A52]'
+                      : 'border-[#E5E5E5] text-[#666666] hover:border-[#006A52]/50'
                       }`}
                   >
                     {type === 'home' && <Home className="w-4 h-4" />}
@@ -138,8 +138,8 @@ export default function AddAddressPage({ onNavigate }) {
                 type="button"
                 onClick={() => setIsDefault(!isDefault)}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isDefault
-                    ? 'bg-[#006A52] border-[#006A52]'
-                    : 'border-[#999999] hover:border-[#006A52]'
+                  ? 'bg-[#006A52] border-[#006A52]'
+                  : 'border-[#999999] hover:border-[#006A52]'
                   }`}
               >
                 {isDefault && (

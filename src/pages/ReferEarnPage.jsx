@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, Users, Share2, Copy, Gift, Check, ArrowRight, UserPlus } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 const howItWorks = [
   {

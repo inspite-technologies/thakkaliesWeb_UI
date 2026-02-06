@@ -12,7 +12,7 @@ import {
   Mail
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 export default function ProfilePage({ onNavigate }) {
   const { user, logout } = useStore();

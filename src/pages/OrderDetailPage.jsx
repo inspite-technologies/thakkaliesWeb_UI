@@ -175,16 +175,7 @@ export default function OrderDetailPage({ orderId, onNavigate }) {
               </div>
             </div>
 
-            <div className="space-y-3">
-              {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                <Button
-                  onClick={() => onNavigate('order-tracking', { orderId: order.id })}
-                  className="w-full btn-secondary"
-                >
-                  <Truck className="w-4 h-4 mr-2" />
-                  Track Order
-                </Button>
-              )}
+            <div className="space-y-10">
               <Button className="w-full btn-primary">
                 <Check className="w-4 h-4 mr-2" />
                 Download Invoice

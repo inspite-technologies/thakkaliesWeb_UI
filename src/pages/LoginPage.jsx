@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Leaf, Phone, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Phone, ArrowRight, ChevronLeft } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { useStore } from '../context/StoreContext.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 export default function LoginPage({ onNavigate }) {
   const [phone, setPhone] = useState('');
@@ -60,8 +60,12 @@ export default function LoginPage({ onNavigate }) {
 
         <div className="bg-white rounded-3xl shadow-xl shadow-black/5 p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#006A52] rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Leaf className="w-8 h-8 text-white" />
+            <div className="h-16 flex items-center justify-center mx-auto mb-4">
+              <img
+                src="/thakkalies_horizontal_logo.svg"
+                alt="Thakkalies"
+                className="h-full w-auto object-contain"
+              />
             </div>
             <h1 className="text-2xl font-bold text-[#1A1A1A]">Welcome Back</h1>
             <p className="text-[#666666] mt-2">

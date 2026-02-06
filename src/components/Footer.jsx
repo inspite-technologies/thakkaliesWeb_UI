@@ -1,4 +1,4 @@
-import { Leaf, Facebook, Instagram, Twitter, Youtube, CreditCard, Truck, Shield, Headphones } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Youtube, CreditCard, Truck, Shield, Headphones } from 'lucide-react';
 
 export default function Footer({ onNavigate }) {
   const features = [
@@ -55,16 +55,17 @@ export default function Footer({ onNavigate }) {
       <div className="section-container py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 bg-[#006A52] rounded-xl flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold">Thakkalies</span>
+            <div className="flex items-center mb-6 h-10">
+              <img
+                src="/thakkalies_horizontal_logo.svg"
+                alt="Thakkalies"
+                className="h-full w-auto object-contain brightness-0 invert"
+              />
             </div>
             <p className="text-white/60 mb-6 max-w-sm">
               Fresh groceries, delivered with care. Connecting local farmers to your doorstep with transparency and trust.
             </p>
-            
+
             <div className="mb-6">
               <h4 className="font-semibold mb-3">Subscribe for updates</h4>
               <div className="flex gap-2">

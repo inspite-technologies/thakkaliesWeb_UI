@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 import { mockUser, mockAddresses, mockOrders } from '../data/mockData.js';
 import { normalizeImageUrl } from '../utils/utils.js';
 
@@ -232,6 +232,11 @@ export function StoreProvider({ children }) {
   }, []);
 
   const addToCart = useCallback(async (product, quantity = 1) => {
+    if (!isLoggedIn) {
+      toast.error('Please login to add to cart');
+      return;
+    }
+
     const token = localStorage.getItem('token');
     const productId = product.id || product._id;
 
@@ -239,6 +244,7 @@ export function StoreProvider({ children }) {
       try {
         const result = await addToCartApi(productId);
         if (result?.success) {
+          toast.success('Added to cart');
           fetchCart();
           return;
         } else {
@@ -249,27 +255,22 @@ export function StoreProvider({ children }) {
         console.error('Add to cart backend error:', error);
       }
     }
-
-    // Local fallback/handling if not logged in or backend fails
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === productId);
-      if (existing) {
-        return prev.map(item =>
-          item.product.id === productId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-  }, [fetchCart]);
+  }, [isLoggedIn, fetchCart]);
 
   const updateQuantity = useCallback(async (productId, quantity) => {
+    if (!isLoggedIn) {
+      toast.error('Please login to update cart');
+      return;
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const result = await updateCartQuantityApi(productId, quantity);
         if (result?.success) {
+          if (quantity <= 0) {
+            toast.success('Removed from cart');
+          }
           fetchCart();
           return;
         } else {
@@ -281,17 +282,7 @@ export function StoreProvider({ children }) {
         console.error('Update quantity backend error:', error);
       }
     }
-
-    if (quantity <= 0) {
-      setCart(prev => prev.filter(item => item.product.id !== productId));
-      return;
-    }
-    setCart(prev =>
-      prev.map(item =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
-  }, [cart, fetchCart]);
+  }, [isLoggedIn, fetchCart]);
 
   const removeFromCart = useCallback(async (productId) => {
     const token = localStorage.getItem('token');
@@ -315,6 +306,11 @@ export function StoreProvider({ children }) {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const toggleWishlist = useCallback(async (product) => {
+    if (!isLoggedIn) {
+      toast.error('Please login to add to wishlist');
+      return;
+    }
+
     const productId = product.id || product._id;
     const isLiked = wishlist.some(item => (item.id || item._id) === productId);
     const token = localStorage.getItem('token');
@@ -322,8 +318,10 @@ export function StoreProvider({ children }) {
     // Update local state first for responsiveness
     if (isLiked) {
       setWishlist(prev => prev.filter(item => (item.id || item._id) !== productId));
+      toast.success('Removed from wishlist');
     } else {
       setWishlist(prev => [...prev, product]);
+      toast.success('Added to wishlist');
     }
 
     // Sync with backend if logged in
@@ -338,7 +336,7 @@ export function StoreProvider({ children }) {
         console.error('Toggle wishlist backend error:', error);
       }
     }
-  }, [wishlist]);
+  }, [isLoggedIn, wishlist]);
 
   const isInWishlist = useCallback((productId) => {
     return wishlist.some(item => (item.id || item._id) === productId);

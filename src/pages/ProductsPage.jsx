@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search, Filter, Star, Plus, Minus, Heart, Clock, ChevronDown, X, ShoppingBag } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 import { normalizeImageUrl } from '../utils/utils.js';
 
 const API_BASE_URL = 'http://localhost:5001';
@@ -16,7 +16,7 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
   const [selectedShop, setSelectedShop] = useState(initialStoreId || 'all');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('featured');
-  const { addToCart, toggleWishlist, isInWishlist, cart, updateQuantity } = useStore();
+  const { addToCart, toggleWishlist, isInWishlist, cart, updateQuantity, isLoggedIn } = useStore();
 
   // Update selection if initial props change
   useEffect(() => {
@@ -109,11 +109,14 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
   };
 
   const handleToggleWishlist = (product) => {
+    if (!isLoggedIn) {
+      toast('Please login to add to wishlist');
+      onNavigate('login');
+      return;
+    }
     toggleWishlist(product);
     const isAdded = !isInWishlist(product.id || product._id);
-    toast(isAdded ? 'Added to wishlist' : 'Removed from wishlist', {
-      icon: isAdded ? '❤️' : '💔',
-    });
+    toast(isAdded ? 'Added to wishlist' : 'Removed from wishlist');
   };
 
   return (
@@ -285,20 +288,22 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
                           </span>
                         </div>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleWishlist(product);
-                        }}
-                        className="absolute top-3 right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-[#FFF3ED] transition-colors"
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${isInWishlist(product.id)
-                            ? 'fill-[#E85A24] text-[#E85A24]'
-                            : 'text-[#666666]'
-                            }`}
-                        />
-                      </button>
+                      {isLoggedIn && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleWishlist(product);
+                          }}
+                          className="absolute top-3 right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-[#FFF3ED] transition-colors"
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${isInWishlist(product.id)
+                              ? 'fill-[#E85A24] text-[#E85A24]'
+                              : 'text-[#666666]'
+                              }`}
+                          />
+                        </button>
+                      )}
                     </div>
 
                     <div className="p-4">
@@ -322,42 +327,44 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
                             </span>
                           </div>
                         </div>
-                        {findQuantity(product.id) > 0 ? (
-                          <div className="flex items-center gap-3 bg-[#F5F5F5] rounded-xl p-1">
+                        {isLoggedIn && (
+                          findQuantity(product.id) > 0 ? (
+                            <div className="flex items-center gap-3 bg-[#F5F5F5] rounded-xl p-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUpdateQuantity(product.id, -1);
+                                }}
+                                className="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors shadow-sm"
+                              >
+                                <Minus className="w-4 h-4 text-[#006A52]" />
+                              </button>
+                              <span className="w-6 text-center font-bold text-[#1A1A1A]">
+                                {findQuantity(product.id)}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUpdateQuantity(product.id, 1);
+                                }}
+                                className="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors shadow-sm"
+                              >
+                                <Plus className="w-4 h-4 text-[#006A52]" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleUpdateQuantity(product.id, -1);
+                                handleAddToCart(product);
                               }}
-                              className="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors shadow-sm"
+                              disabled={product.stock <= 0}
+                              className={`w-10 h-10 bg-[#006A52] text-white rounded-xl flex items-center justify-center hover:bg-[#00523F] transition-colors hover:scale-105 active:scale-95 ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                             >
-                              <Minus className="w-4 h-4 text-[#006A52]" />
+                              <Plus className="w-5 h-5" />
                             </button>
-                            <span className="w-6 text-center font-bold text-[#1A1A1A]">
-                              {findQuantity(product.id)}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUpdateQuantity(product.id, 1);
-                              }}
-                              className="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors shadow-sm"
-                            >
-                              <Plus className="w-4 h-4 text-[#006A52]" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddToCart(product);
-                            }}
-                            disabled={product.stock <= 0}
-                            className={`w-10 h-10 bg-[#006A52] text-white rounded-xl flex items-center justify-center hover:bg-[#00523F] transition-colors hover:scale-105 active:scale-95 ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
-                          >
-                            <Plus className="w-5 h-5" />
-                          </button>
+                          )
                         )}
                       </div>
                     </div>

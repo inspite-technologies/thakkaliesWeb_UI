@@ -8,8 +8,7 @@ import {
   ChevronDown,
   User,
   Menu,
-  X,
-  Leaf
+  X
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { Input } from './ui/input.jsx';
@@ -51,20 +50,21 @@ export default function Navigation({ onNavigate, currentPage }) {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-          ? 'glass-nav shadow-lg shadow-black/5'
-          : 'bg-white'
+        ? 'glass-nav shadow-lg shadow-black/5'
+        : 'bg-white'
         }`}
     >
       <div className="section-container">
         <div className="flex items-center justify-between h-20">
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-2 group"
+            className="flex items-center group h-12"
           >
-            <div className="w-10 h-10 bg-[#006A52] rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-              <Leaf className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-[#1A1A1A]">Thakkalies</span>
+            <img
+              src="/thakkalies_horizontal_logo.svg"
+              alt="Thakkalies"
+              className="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </button>
 
           <div className="hidden lg:flex items-center gap-2 ml-8">
@@ -120,7 +120,13 @@ export default function Navigation({ onNavigate, currentPage }) {
             </button>
 
             <button
-              onClick={() => onNavigate('wishlist')}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  toast.error('Please login to view wishlist');
+                  return;
+                }
+                onNavigate('wishlist');
+              }}
               className="relative p-2.5 text-[#666666] hover:text-[#006A52] hover:bg-[#E8F5F1] rounded-xl transition-all duration-300"
             >
               <Heart className="w-5 h-5" />
@@ -132,7 +138,13 @@ export default function Navigation({ onNavigate, currentPage }) {
             </button>
 
             <button
-              onClick={() => onNavigate('cart')}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  toast.error('Please login to view cart');
+                  return;
+                }
+                onNavigate('cart');
+              }}
               className="relative p-2.5 text-[#666666] hover:text-[#006A52] hover:bg-[#E8F5F1] rounded-xl transition-all duration-300"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -214,8 +226,8 @@ export default function Navigation({ onNavigate, currentPage }) {
                     setIsMobileMenuOpen(false);
                   }}
                   className={`px-4 py-3 text-left rounded-xl transition-colors ${currentPage === link.page
-                      ? 'bg-[#E8F5F1] text-[#006A52] font-medium'
-                      : 'text-[#1A1A1A] hover:bg-[#F5F5F5]'
+                    ? 'bg-[#E8F5F1] text-[#006A52] font-medium'
+                    : 'text-[#1A1A1A] hover:bg-[#F5F5F5]'
                     }`}
                 >
                   {link.label}

@@ -3,7 +3,7 @@ import { ChevronLeft, User, Mail, Phone, Check } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 export default function EditProfilePage({ onNavigate }) {
   const { user, updateUserDetails } = useStore();

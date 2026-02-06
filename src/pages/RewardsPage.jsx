@@ -1,6 +1,6 @@
 import { ChevronLeft, Gift, Plus, Minus, ShoppingBag, Users, Cake, ChevronRight } from 'lucide-react';
 import { mockRewards, redeemOptions, waysToEarn } from '../data/mockData.js';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 
 const iconMap = {
   'ShoppingBag': ShoppingBag,
@@ -63,11 +63,10 @@ export default function RewardsPage({ onNavigate }) {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          transaction.type === 'earned'
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${transaction.type === 'earned'
                             ? 'bg-[#E8F5F1]'
                             : 'bg-[#FFF3ED]'
-                        }`}
+                          }`}
                       >
                         {transaction.type === 'earned' ? (
                           <Plus className="w-5 h-5 text-[#006A52]" />
@@ -83,11 +82,10 @@ export default function RewardsPage({ onNavigate }) {
                       </div>
                     </div>
                     <span
-                      className={`font-semibold ${
-                        transaction.type === 'earned'
+                      className={`font-semibold ${transaction.type === 'earned'
                           ? 'text-[#006A52]'
                           : 'text-[#E85A24]'
-                      }`}
+                        }`}
                     >
                       {transaction.type === 'earned' ? '+' : '-'}
                       {transaction.points}
@@ -130,11 +128,10 @@ export default function RewardsPage({ onNavigate }) {
                     key={option.points}
                     onClick={() => handleRedeem(option.points, option.discount)}
                     disabled={mockRewards.availablePoints < option.points}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                      mockRewards.availablePoints >= option.points
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${mockRewards.availablePoints >= option.points
                         ? 'border-[#E5E5E5] hover:border-[#006A52] hover:bg-[#E8F5F1]'
                         : 'border-[#E5E5E5] opacity-50 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>

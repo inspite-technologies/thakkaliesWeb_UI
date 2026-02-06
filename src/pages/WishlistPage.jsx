@@ -2,7 +2,7 @@ import { Heart, ShoppingCart, ArrowRight } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { products } from '../data/mockData.js';
 import { Button } from '../components/ui/button.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 import { normalizeImageUrl } from '../utils/utils.js';
 
 export default function WishlistPage({ onNavigate }) {
@@ -17,7 +17,7 @@ export default function WishlistPage({ onNavigate }) {
 
   const handleRemoveFromWishlist = (product) => {
     toggleWishlist(product);
-    toast('Removed from wishlist', { icon: '💔' });
+    toast('Removed from wishlist');
   };
 
   if (wishlistProducts.length === 0) {

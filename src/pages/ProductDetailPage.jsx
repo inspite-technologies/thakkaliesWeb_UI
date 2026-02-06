@@ -16,7 +16,7 @@ import {
 import { useStore } from '../context/StoreContext.jsx';
 import { products } from '../data/mockData.js';
 import { Button } from '../components/ui/button.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 import { normalizeImageUrl } from '../utils/utils.js';
 
 const API_BASE_URL = 'http://localhost:5001';
@@ -25,7 +25,7 @@ export default function ProductDetailPage({ productId, onNavigate }) {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { addToCart, toggleWishlist, isInWishlist } = useStore();
+  const { addToCart, toggleWishlist, isInWishlist, isLoggedIn } = useStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -89,11 +89,14 @@ export default function ProductDetailPage({ productId, onNavigate }) {
   };
 
   const handleToggleWishlist = () => {
+    if (!isLoggedIn) {
+      toast('Please login to add to wishlist');
+      onNavigate('login');
+      return;
+    }
     toggleWishlist(product);
     const isAdded = !isInWishlist(product.id || product._id);
-    toast(isAdded ? 'Added to wishlist' : 'Removed from wishlist', {
-      icon: isAdded ? '❤️' : '💔',
-    });
+    toast(isAdded ? 'Added to wishlist' : 'Removed from wishlist');
   };
 
   return (
@@ -137,17 +140,19 @@ export default function ProductDetailPage({ productId, onNavigate }) {
                 </h1>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handleToggleWishlist}
-                  className="w-10 h-10 bg-[#F5F5F5] rounded-xl flex items-center justify-center hover:bg-[#FFF3ED] transition-colors"
-                >
-                  <Heart
-                    className={`w-5 h-5 ${isInWishlist(product.id)
-                      ? 'fill-[#E85A24] text-[#E85A24]'
-                      : 'text-[#666666]'
-                      }`}
-                  />
-                </button>
+                {isLoggedIn && (
+                  <button
+                    onClick={handleToggleWishlist}
+                    className="w-10 h-10 bg-[#F5F5F5] rounded-xl flex items-center justify-center hover:bg-[#FFF3ED] transition-colors"
+                  >
+                    <Heart
+                      className={`w-5 h-5 ${isInWishlist(product.id)
+                        ? 'fill-[#E85A24] text-[#E85A24]'
+                        : 'text-[#666666]'
+                        }`}
+                    />
+                  </button>
+                )}
                 <button className="w-10 h-10 bg-[#F5F5F5] rounded-xl flex items-center justify-center hover:bg-[#E8F5F1] transition-colors">
                   <Share2 className="w-5 h-5 text-[#666666]" />
                 </button>
@@ -179,42 +184,46 @@ export default function ProductDetailPage({ productId, onNavigate }) {
               </p>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-[#1A1A1A] mb-3">Quantity</h3>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 bg-[#F5F5F5] rounded-xl p-1">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-8 text-center font-semibold">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <span className="text-sm text-[#666666]">
-                  Total:{' '}
-                  <span className="font-semibold text-[#006A52]">
-                    ₹{product.price * quantity}
+            {isLoggedIn && (
+              <div>
+                <h3 className="font-semibold text-[#1A1A1A] mb-3">Quantity</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 bg-[#F5F5F5] rounded-xl p-1">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-8 text-center font-semibold">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-[#E8F5F1] transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="text-sm text-[#666666]">
+                    Total:{' '}
+                    <span className="font-semibold text-[#006A52]">
+                      ₹{product.price * quantity}
+                    </span>
                   </span>
-                </span>
+                </div>
               </div>
-            </div>
+            )}
 
-            <Button
-              onClick={handleAddToCart}
-              disabled={product.stock <= 0 || !product.isAvailable}
-              className={`w-full btn-primary py-4 h-14 text-lg flex items-center justify-center gap-2 ${(product.stock <= 0 || !product.isAvailable) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {product.stock <= 0 ? 'Out of Stock' : `Add to Cart - ₹${product.price * quantity}`}
-            </Button>
+            {isLoggedIn && (
+              <Button
+                onClick={handleAddToCart}
+                disabled={product.stock <= 0 || !product.isAvailable}
+                className={`w-full btn-primary py-4 h-14 text-lg flex items-center justify-center gap-2 ${product.stock <= 0 || !product.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {product.stock <= 0 || !product.isAvailable ? 'Out of Stock' : `Add to Cart - ₹${product.price * quantity}`}
+              </Button>
+            )}
 
             <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[#E5E5E5]">
               <div className="text-center">

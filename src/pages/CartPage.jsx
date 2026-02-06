@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
-import { toast } from 'sonner';
+import { toast } from '../components/ui/sonner';
 import { normalizeImageUrl } from '../utils/utils.js';
 
 export default function CartPage({ onNavigate }) {
