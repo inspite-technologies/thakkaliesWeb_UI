@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search, Filter, Star, Plus, Minus, Heart, Clock, ChevronDown, X, ShoppingBag } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 const API_BASE_URL = 'http://localhost:5001';
 
@@ -39,7 +40,7 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
           id: p._id,
           name: p.name || p.productName || 'Unnamed Product',
           price: p.price,
-          image: p.image || (p.images && p.images[0]) || '/product-placeholder.jpg',
+          image: normalizeImageUrl(p.image || (p.images && p.images[0]) || null),
           category: p.categoryName || 'Uncategorized',
           shop: p.storeName || 'Unknown Store',
           rating: p.rating || 4.5,
@@ -269,8 +270,12 @@ export default function ProductsPage({ onNavigate, initialCategoryId, initialSto
                       onClick={() => onNavigate('product-detail', { productId: product.id })}
                     >
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={normalizeImageUrl(product.image)}
+                        alt={product.productName}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/product-placeholder.png';
+                        }}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       {product.stock <= 0 && (

@@ -12,6 +12,7 @@ import {
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 export default function CartPage({ onNavigate }) {
   const {
@@ -27,7 +28,7 @@ export default function CartPage({ onNavigate }) {
   const [selectedAddress] = useState(
     addresses.find((a) => a.isDefault)?.id || addresses[0]?.id
   );
-  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [paymentMethod, setPaymentMethod] = useState('online');
 
   const deliveryFee = cartTotal >= 299 ? 0 : 40;
   const taxes = Math.round(cartTotal * 0.05);
@@ -51,11 +52,11 @@ export default function CartPage({ onNavigate }) {
         deliveryFee,
         taxes,
         total,
-        paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment',
+        paymentMethod: 'Online Payment',
         deliveryAddress: defaultAddress,
       });
       toast.success('Order placed successfully!');
-      onNavigate('order-tracking', { orderId: order.id });
+      onNavigate('payment-success', { orderId: order.id });
     } catch (error) {
       toast.error('Failed to place order. Please try again.');
     } finally {
@@ -149,8 +150,12 @@ export default function CartPage({ onNavigate }) {
                   className="flex gap-4 pb-6 border-b border-[#E5E5E5] last:border-0 last:pb-0"
                 >
                   <img
-                    src={item.product.image}
+                    src={normalizeImageUrl(item.product.image)}
                     alt={item.product.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/product-placeholder.png';
+                    }}
                     className="w-24 h-24 object-cover rounded-xl bg-[#F5F5F5]"
                   />
                   <div className="flex-1">
@@ -236,51 +241,22 @@ export default function CartPage({ onNavigate }) {
                 <h4 className="text-sm font-medium text-[#666666] mb-3">
                   Payment Method
                 </h4>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setPaymentMethod('cod')}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-colors flex items-center gap-3 ${paymentMethod === 'cod'
-                      ? 'border-[#006A52] bg-[#E8F5F1]'
-                      : 'border-[#E5E5E5] hover:border-[#006A52]/50'
-                      }`}
+                <button
+                  onClick={() => setPaymentMethod('online')}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-colors flex items-center gap-3 border-[#006A52] bg-[#E8F5F1]`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center border-[#006A52]`}
                   >
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cod'
-                        ? 'border-[#006A52]'
-                        : 'border-[#999999]'
-                        }`}
-                    >
-                      {paymentMethod === 'cod' && (
-                        <div className="w-2.5 h-2.5 bg-[#006A52] rounded-full" />
-                      )}
-                    </div>
-                    <span className="font-medium">Cash on Delivery</span>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('online')}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-colors flex items-center gap-3 ${paymentMethod === 'online'
-                      ? 'border-[#006A52] bg-[#E8F5F1]'
-                      : 'border-[#E5E5E5] hover:border-[#006A52]/50'
-                      }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'online'
-                        ? 'border-[#006A52]'
-                        : 'border-[#999999]'
-                        }`}
-                    >
-                      {paymentMethod === 'online' && (
-                        <div className="w-2.5 h-2.5 bg-[#006A52] rounded-full" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-medium block">Online Payment</span>
-                      <span className="text-xs text-[#666666]">
-                        UPI, Cards, Net Banking
-                      </span>
-                    </div>
-                  </button>
-                </div>
+                    <div className="w-2.5 h-2.5 bg-[#006A52] rounded-full" />
+                  </div>
+                  <div>
+                    <span className="font-medium block">Online Payment</span>
+                    <span className="text-xs text-[#666666]">
+                      UPI, Cards, Net Banking (Razorpay)
+                    </span>
+                  </div>
+                </button>
               </div>
 
               <Button

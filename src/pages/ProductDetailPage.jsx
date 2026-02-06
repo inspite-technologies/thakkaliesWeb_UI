@@ -17,6 +17,7 @@ import { useStore } from '../context/StoreContext.jsx';
 import { products } from '../data/mockData.js';
 import { Button } from '../components/ui/button.jsx';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 const API_BASE_URL = 'http://localhost:5001';
 
@@ -38,7 +39,7 @@ export default function ProductDetailPage({ productId, onNavigate }) {
             id: p._id,
             name: p.productName || p.name,
             price: p.price,
-            image: p.image || (p.images && p.images.length > 0 ? p.images[0] : '/product-placeholder.jpg'),
+            image: normalizeImageUrl(p.image || (p.images && p.images.length > 0 ? p.images[0] : null)),
             category: p.categoryName || p.category?.name || p.category || 'Uncategorized',
             shop: p.storeName || p.storeId?.storeName || p.shop || 'Unknown Store',
             description: p.description || 'No description available for this product.',
@@ -114,9 +115,13 @@ export default function ProductDetailPage({ productId, onNavigate }) {
           <div className="bg-white rounded-3xl p-8 shadow-sm">
             <div className="relative aspect-square bg-[#F5F5F5] rounded-2xl overflow-hidden">
               <img
-                src={product.image}
+                src={normalizeImageUrl(product.image)}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/product-placeholder.png';
+                }}
+                className="w-full h-full object-cover"
               />
             </div>
           </div>
@@ -246,9 +251,13 @@ export default function ProductDetailPage({ productId, onNavigate }) {
                 >
                   <div className="relative aspect-square bg-[#F5F5F5] overflow-hidden">
                     <img
-                      src={relatedProduct.image}
+                      src={normalizeImageUrl(relatedProduct.image)}
                       alt={relatedProduct.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/product-placeholder.png';
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>
                   <div className="p-4">

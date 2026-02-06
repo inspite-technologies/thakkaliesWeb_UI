@@ -1,6 +1,7 @@
 import { ChevronLeft, MapPin, Package, CreditCard, Truck, Check } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 const statusColors = {
   confirmed: 'bg-[#E8F5F1] text-[#006A52]',
@@ -68,9 +69,8 @@ export default function OrderDetailPage({ orderId, onNavigate }) {
                   </p>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    statusColors[order.status]
-                  }`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[order.status]
+                    }`}
                 >
                   {statusLabels[order.status]}
                 </span>
@@ -85,11 +85,11 @@ export default function OrderDetailPage({ orderId, onNavigate }) {
               <div className="p-4 bg-[#F5F5F5] rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="px-2 py-1 bg-[#006A52] text-white text-xs font-medium rounded-lg capitalize">
-                    {order.deliveryAddress.type}
+                    {order.deliveryAddress?.type || 'Delivery'}
                   </span>
                 </div>
-                <p className="text-[#1A1A1A]">{order.deliveryAddress.fullAddress}</p>
-                {order.deliveryAddress.landmark && (
+                <p className="text-[#1A1A1A]">{order.deliveryAddress?.fullAddress || 'Address not available'}</p>
+                {order.deliveryAddress?.landmark && (
                   <p className="text-sm text-[#666666] mt-1">
                     Landmark: {order.deliveryAddress.landmark}
                   </p>
@@ -109,8 +109,12 @@ export default function OrderDetailPage({ orderId, onNavigate }) {
                     className="flex gap-4 pb-4 border-b border-[#E5E5E5] last:border-0 last:pb-0"
                   >
                     <img
-                      src={item.product.image}
+                      src={normalizeImageUrl(item.product.image)}
                       alt={item.product.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/product-placeholder.png';
+                      }}
                       className="w-20 h-20 object-cover rounded-xl bg-[#F5F5F5]"
                     />
                     <div className="flex-1">

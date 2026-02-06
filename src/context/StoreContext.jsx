@@ -1,10 +1,89 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { mockUser, mockAddresses, mockOrders } from '../data/mockData.js';
+import { normalizeImageUrl } from '../utils/utils.js';
+
+// Import services
+import {
+  fetchCartItems,
+  addToCartApi,
+  updateCartQuantityApi,
+  normalizeCartItems
+} from '../services/cartService';
+
+import {
+  fetchWishlistItems,
+  addToWishlistApi,
+  removeFromWishlistApi,
+  normalizeWishlistItems
+} from '../services/wishlistService';
+
+import {
+  requestOtpApi,
+  verifyOtpApi,
+  fetchUserDetailsApi,
+  updateUserDetailsApi,
+  normalizeUserData,
+  normalizeAddresses
+} from '../services/userService';
+
+import {
+  addAddressApi,
+  updateAddressApi,
+  deleteAddressApi,
+  setDefaultAddressApi
+} from '../services/addressService';
+
+import {
+  getPaymentKeyApi,
+  createOrderApi,
+  verifyPaymentApi,
+  createRazorpayOptions,
+  fetchOrdersApi
+} from '../services/orderService';
+
+import {
+  fetchProductDetailsApi
+} from '../services/productService';
+
+/**
+ * Normalize order data from backend to frontend format
+ */
+export const normalizeOrders = (backendOrders) => {
+  if (!Array.isArray(backendOrders)) return [];
+
+  return backendOrders.map(order => {
+    // Backend provides address as a string, frontend expects an object
+    const deliveryAddress = typeof order.address === 'string'
+      ? { type: 'Delivery', fullAddress: order.address, landmark: '' }
+      : (order.address || { type: 'Delivery', fullAddress: 'Address not available', landmark: '' });
+
+    return {
+      id: order._id || order.id,
+      orderNumber: order.razorpayOrderId || `ORD-${(order._id || order.id).slice(-6).toUpperCase()}`,
+      orderDate: order.createdAt,
+      status: (order.status || 'confirmed').toLowerCase(),
+      total: order.amount || 0,
+      subtotal: order.subtotal || order.amount || 0, // Fallback to total if subtotal missing
+      deliveryFee: order.deliveryFee || 0,
+      taxes: order.taxes || 0,
+      items: (order.items || []).map(item => ({
+        product: {
+          id: item.productId,
+          name: item.productName || 'Product',
+          price: item.price || 0,
+          image: normalizeImageUrl(item.image) // Use normalizeImageUrl even for placeholders
+        },
+        quantity: item.quantity || 1
+      })),
+      deliveryAddress,
+      paymentStatus: order.paymentStatus || 'Pending',
+      paymentMethod: order.paymentMethod || 'Online Payment (Razorpay)'
+    };
+  });
+};
 
 const StoreContext = createContext(undefined);
-
-const API_BASE_URL = 'http://localhost:5001/user';
 
 export function StoreProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -12,47 +91,16 @@ export function StoreProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [addresses, setAddresses] = useState([]);
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState([]);
   const [deliveryLocation, setDeliveryLocation] = useState('Infopark, Kochi');
 
   const fetchCart = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch('http://localhost:5001/cart', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const result = await response.json();
-      // Backend returns { success: true, data: { items: [...] } }
-      if (result.success && result.data && Array.isArray(result.data.items)) {
-        const itemMap = new Map();
-        result.data.items.forEach(item => {
-          const pid = item.productId;
-          if (!pid) return;
-
-          if (itemMap.has(pid)) {
-            itemMap.get(pid).quantity += item.quantity;
-          } else {
-            itemMap.set(pid, {
-              _id: pid,
-              product: {
-                id: pid,
-                name: item.productName,
-                price: item.price,
-                image: item.image || '/product-placeholder.jpg',
-                category: item.categoryName || 'General',
-                shop: item.storeName
-              },
-              quantity: item.quantity
-            });
-          }
-        });
-        setCart(Array.from(itemMap.values()));
+      const result = await fetchCartItems();
+      if (result?.success && result.data && Array.isArray(result.data.items)) {
+        setCart(normalizeCartItems(result.data.items));
       } else {
-        setCart([]); // Reset if no items or malformed data
+        setCart([]);
       }
     } catch (error) {
       console.error('Fetch cart error:', error);
@@ -60,60 +108,68 @@ export function StoreProvider({ children }) {
   }, []);
 
   const fetchWishlist = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch('http://localhost:5001/likes', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const result = await response.json();
-      if (result.data) {
-        const normalized = result.data.map(item => {
-          const p = item.productId;
-          if (!p) return null;
-          return {
-            id: p._id,
-            name: p.productName || p.name || 'Unnamed Product',
-            price: p.price,
-            image: p.image || (p.images && p.images.length > 0 ? p.images[0] : '/product-placeholder.jpg'),
-            category: p.categoryName || p.category?.name || p.category?.categoryName || p.category || 'Uncategorized',
-            shop: p.storeName || p.storeId?.storeName || p.shop || 'Unknown Store'
-          };
-        }).filter(Boolean);
-        setWishlist(normalized);
+      const result = await fetchWishlistItems();
+      if (result?.data) {
+        setWishlist(normalizeWishlistItems(result.data));
       }
     } catch (error) {
       console.error('Fetch wishlist error:', error);
     }
   }, []);
 
-  const fetchUserDetails = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
+  const fetchOrders = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/getUser`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const result = await response.json();
-      if (result.data) {
-        const userData = result.data;
-        setUser({
-          ...userData,
-          name: userData.fullName || userData.name,
-          phone: userData.phoneNumber || userData.phone
+      const result = await fetchOrdersApi();
+      if (result?.success && result.data) {
+        const normalizedOrders = normalizeOrders(result.data);
+        setOrders(normalizedOrders);
+
+        // Enrich with images dynamically
+        const productIds = new Set();
+        normalizedOrders.forEach(order => {
+          order.items.forEach(item => {
+            if (item.product.id) productIds.add(item.product.id);
+          });
         });
-        if (userData.addresses) {
-          setAddresses(userData.addresses.map(addr => ({
-            ...addr,
-            type: addr.addressType || 'home'
+
+        if (productIds.size > 0) {
+          const productDetails = await Promise.all(
+            Array.from(productIds).map(id => fetchProductDetailsApi(id))
+          );
+
+          const imageMap = {};
+          productDetails.forEach(res => {
+            if (res?.data) {
+              // The backend returns normalized data in .data
+              const id = res.data._id || res.data.id;
+              imageMap[id] = res.data.image;
+            }
+          });
+
+          setOrders(prevOrders => prevOrders.map(order => ({
+            ...order,
+            items: order.items.map(item => ({
+              ...item,
+              product: {
+                ...item.product,
+                image: normalizeImageUrl(imageMap[item.product.id] || item.product.image)
+              }
+            }))
           })));
         }
+      }
+    } catch (error) {
+      console.error('Fetch orders error:', error);
+    }
+  }, []);
+
+  const fetchUserDetails = useCallback(async () => {
+    try {
+      const result = await fetchUserDetailsApi();
+      if (result?.data) {
+        setUser(normalizeUserData(result.data));
+        setAddresses(normalizeAddresses(result.data.addresses));
       }
     } catch (error) {
       console.error('Fetch user details error:', error);
@@ -135,23 +191,14 @@ export function StoreProvider({ children }) {
       fetchWishlist();
       fetchCart();
       fetchUserDetails();
+      fetchOrders();
     }
-  }, [isLoggedIn, fetchWishlist, fetchCart, fetchUserDetails]);
+  }, [isLoggedIn, fetchWishlist, fetchCart, fetchUserDetails, fetchOrders]);
 
   const requestOTP = useCallback(async (phone) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/request-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber: phone }),
-      });
-      const data = await response.json();
+      const data = await requestOtpApi(phone);
       console.log("OTP received (debug):", data.otp);
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to request OTP');
-      }
       return true;
     } catch (error) {
       console.error('Request OTP error:', error);
@@ -161,24 +208,10 @@ export function StoreProvider({ children }) {
 
   const login = useCallback(async (phone, otp) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/verify-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber: phone, otp }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        // The backend returns user details in data.data
-        const userData = data.data;
-        setUser({
-          ...userData,
-          name: userData.fullName || userData.name,
-          phone: userData.phoneNumber || userData.phone
-        });
+      const data = await verifyOtpApi(phone, otp);
+      if (data.data) {
+        setUser(normalizeUserData(data.data));
         setIsLoggedIn(true);
-        // Store token if available
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
@@ -204,20 +237,12 @@ export function StoreProvider({ children }) {
 
     if (token) {
       try {
-        const response = await fetch(`http://localhost:5001/cart`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ productIds: [productId] })
-        });
-        const result = await response.json();
-        if (result.success) {
-          fetchCart(); // Refresh from backend to ensure consistency
+        const result = await addToCartApi(productId);
+        if (result?.success) {
+          fetchCart();
           return;
         } else {
-          toast.error(result.msg || 'Failed to add to cart');
+          toast.error(result?.msg || 'Failed to add to cart');
           return;
         }
       } catch (error) {
@@ -225,7 +250,7 @@ export function StoreProvider({ children }) {
       }
     }
 
-    // Local fallback/handling if not logged in or backend fails silently
+    // Local fallback/handling if not logged in or backend fails
     setCart(prev => {
       const existing = prev.find(item => item.product.id === productId);
       if (existing) {
@@ -243,20 +268,14 @@ export function StoreProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await fetch(`http://localhost:5001/cart/update/${productId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ quantity })
-        });
-        const result = await response.json();
-        if (response.ok) {
+        const result = await updateCartQuantityApi(productId, quantity);
+        if (result?.success) {
           fetchCart();
           return;
         } else {
-          toast.error(result.msg || 'Failed to update quantity');
+          console.error('Update quantity failed:', result);
+          toast.error(result?.msg || 'Failed to update quantity');
+          return;
         }
       } catch (error) {
         console.error('Update quantity backend error:', error);
@@ -278,7 +297,6 @@ export function StoreProvider({ children }) {
     const token = localStorage.getItem('token');
 
     if (token) {
-      // Backend handles removal via update with quantity 0
       return updateQuantity(productId, 0);
     }
 
@@ -312,19 +330,9 @@ export function StoreProvider({ children }) {
     if (token) {
       try {
         if (isLiked) {
-          await fetch(`http://localhost:5001/likes/${productId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+          await removeFromWishlistApi(productId);
         } else {
-          await fetch('http://localhost:5001/likes', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ productId })
-          });
+          await addToWishlistApi(productId);
         }
       } catch (error) {
         console.error('Toggle wishlist backend error:', error);
@@ -337,27 +345,13 @@ export function StoreProvider({ children }) {
   }, [wishlist]);
 
   const updateUserDetails = useCallback(async (details) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fullName: details.name,
-          email: details.email
-        }),
-      });
-      const result = await response.json();
-      if (response.ok) {
+      const result = await updateUserDetailsApi(details);
+      if (result?.response?.ok) {
         fetchUserDetails();
         return true;
       }
-      toast.error(result.msg || 'Failed to update profile');
+      toast.error(result?.data?.msg || 'Failed to update profile');
       return false;
     } catch (error) {
       console.error('Update user details error:', error);
@@ -366,34 +360,13 @@ export function StoreProvider({ children }) {
   }, [fetchUserDetails]);
 
   const addAddress = useCallback(async (addressData) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/address`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          addressType: addressData.type || 'home',
-          fullAddress: addressData.fullAddress,
-          city: addressData.city || 'Kochi',
-          district: addressData.district || 'Ernakulam',
-          state: addressData.state || 'Kerala',
-          pincode: parseInt(addressData.pincode) || 0,
-          landmark: addressData.landmark || '',
-          phoneNumber: parseInt(addressData.phone?.replace(/\D/g, '')) || 0,
-          isDefault: addressData.isDefault || false
-        }),
-      });
-      const result = await response.json();
-      if (response.ok) {
+      const result = await addAddressApi(addressData);
+      if (result?.response?.ok) {
         fetchUserDetails();
         return true;
       }
-      toast.error(result.msg || 'Failed to add address');
+      toast.error(result?.data?.msg || 'Failed to add address');
       return false;
     } catch (error) {
       console.error('Add address error:', error);
@@ -402,24 +375,9 @@ export function StoreProvider({ children }) {
   }, [fetchUserDetails]);
 
   const updateAddress = useCallback(async (id, addressData) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/address/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          addressType: addressData.type,
-          fullAddress: addressData.fullAddress,
-          landmark: addressData.landmark,
-          pincode: parseInt(addressData.pincode)
-        }),
-      });
-      if (response.ok) {
+      const result = await updateAddressApi(id, addressData);
+      if (result?.response?.ok) {
         fetchUserDetails();
         return true;
       }
@@ -431,17 +389,9 @@ export function StoreProvider({ children }) {
   }, [fetchUserDetails]);
 
   const deleteAddress = useCallback(async (id) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/address/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
+      const response = await deleteAddressApi(id);
+      if (response?.ok) {
         fetchUserDetails();
         return true;
       }
@@ -453,17 +403,9 @@ export function StoreProvider({ children }) {
   }, [fetchUserDetails]);
 
   const setDefaultAddress = useCallback(async (id) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/address/default/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
+      const response = await setDefaultAddressApi(id);
+      if (response?.ok) {
         fetchUserDetails();
         return true;
       }
@@ -475,17 +417,82 @@ export function StoreProvider({ children }) {
   }, [fetchUserDetails]);
 
   const placeOrder = useCallback(async (orderData) => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const newOrder = {
-      ...orderData,
-      id: Date.now().toString(),
-      orderNumber: `ORD-${20000 + orders.length + 1}`,
-      orderDate: new Date().toISOString(),
-    };
-    setOrders(prev => [newOrder, ...prev]);
-    clearCart();
-    return newOrder;
-  }, [orders.length, clearCart]);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to place an order');
+      return;
+    }
+
+    try {
+      // 1. Create Order on Backend
+      const addressId = orderData.deliveryAddress._id || orderData.deliveryAddress.id;
+      const orderResult = await createOrderApi(addressId);
+
+      if (!orderResult?.success) {
+        throw new Error(orderResult?.msg || 'Failed to create order');
+      }
+
+      const { razorpay, order } = orderResult;
+
+      if (!razorpay || !razorpay.orderId) {
+        throw new Error('Invalid order response from server');
+      }
+
+      console.log('💳 Initiating Razorpay with:', {
+        key: razorpay.key ? 'EXISTS' : 'MISSING',
+        orderId: razorpay.orderId,
+        amount: razorpay.amount,
+        currency: razorpay.currency
+      });
+
+      // 2. Open Razorpay Checkout
+      return new Promise((resolve, reject) => {
+        const options = createRazorpayOptions({
+          key: razorpay.key, // Use key directly from order creation response
+          amount: razorpay.amount,
+          currency: razorpay.currency,
+          orderId: razorpay.orderId,
+          user: user || { name: 'Customer', phone: '' }, // Fallback if user is null
+          onSuccess: async function (response) {
+            try {
+              // 4. Verify Payment
+              const verifyResult = await verifyPaymentApi(response);
+
+              if (verifyResult?.success) {
+                const finalOrderId = order.orderId || order._id || order.id;
+                clearCart();
+                fetchOrders(); // Refresh orders list
+                resolve({ id: finalOrderId });
+              } else {
+                toast.error('Payment verification failed');
+                reject(new Error('Payment verification failed'));
+              }
+            } catch (error) {
+              console.error('Payment verification error:', error);
+              reject(error);
+            }
+          },
+          onDismiss: function () {
+            toast.error('Payment cancelled');
+            reject(new Error('Payment cancelled'));
+          }
+        });
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          toast.error(response.error.description || 'Payment failed');
+          reject(new Error(response.error.description));
+        });
+
+        rzp.open();
+      });
+
+    } catch (error) {
+      console.error('Place order error:', error);
+      toast.error(error.message || 'Failed to place order');
+      throw error;
+    }
+  }, [user, clearCart]);
 
   return (
     <StoreContext.Provider

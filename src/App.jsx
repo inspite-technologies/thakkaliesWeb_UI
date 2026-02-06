@@ -11,6 +11,7 @@ import WishlistPage from './pages/WishlistPage.jsx';
 import OrdersPage from './pages/OrdersPage.jsx';
 import OrderDetailPage from './pages/OrderDetailPage.jsx';
 import OrderTrackingPage from './pages/OrderTrackingPage.jsx';
+import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
 import AddressesPage from './pages/AddressesPage.jsx';
 import AddAddressPage from './pages/AddAddressPage.jsx';
 import EditProfilePage from './pages/EditProfilePage.jsx';
@@ -74,9 +75,17 @@ function AppContent() {
         ) : (
           <OrdersPage onNavigate={navigateTo} />
         );
+      /* Order tracking page - commented out, using payment-success instead
       case 'order-tracking':
         return selectedOrderId ? (
           <OrderTrackingPage orderId={selectedOrderId} onNavigate={navigateTo} />
+        ) : (
+          <OrdersPage onNavigate={navigateTo} />
+        );
+      */
+      case 'payment-success':
+        return selectedOrderId ? (
+          <PaymentSuccessPage orderId={selectedOrderId} onNavigate={navigateTo} />
         ) : (
           <OrdersPage onNavigate={navigateTo} />
         );

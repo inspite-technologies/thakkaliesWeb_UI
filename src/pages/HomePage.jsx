@@ -18,6 +18,7 @@ import {
 import { useStore } from '../context/StoreContext.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 const API_BASE_URL = 'http://localhost:5001';
 
@@ -43,7 +44,7 @@ export default function HomePage({ onNavigate }) {
             ...p,
             id: p._id || p.id,
             name: p.name || p.productName || 'Unnamed Product',
-            image: p.image || (p.images && p.images.length > 0 ? p.images[0] : '/product-placeholder.jpg'),
+            image: normalizeImageUrl(p.image || (p.images && p.images.length > 0 ? p.images[0] : null)),
             category: p.categoryName || p.category?.name || p.category?.categoryName || p.category || 'Uncategorized',
             shop: p.storeName || p.storeId?.storeName || p.storeId?.businessName || p.storeDetails?.storeName || p.shop || 'Unknown Store',
             stock: p.quantity !== undefined ? p.quantity : 0
@@ -130,7 +131,7 @@ export default function HomePage({ onNavigate }) {
                     }`}
                 >
                   <img
-                    src={slide.image}
+                    src={normalizeImageUrl(slide.image)}
                     alt={`Banner ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -192,11 +193,12 @@ export default function HomePage({ onNavigate }) {
                 >
                   <div className="w-24 h-24 rounded-2xl bg-[#F5F5F5] overflow-hidden transition-all duration-300 group-hover:bg-[#E8F5F1] group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-[#006A52]/10">
                     <img
-                      src={category.image}
+                      src={normalizeImageUrl(category.image)}
                       alt={category.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/150?text=' + category.name;
+                        e.target.onerror = null;
+                        e.target.src = '/product-placeholder.png';
                       }}
                     />
                   </div>
@@ -238,8 +240,12 @@ export default function HomePage({ onNavigate }) {
                 >
                   <div className="relative aspect-square bg-[#F5F5F5] overflow-hidden">
                     <img
-                      src={product.image}
+                      src={product.image || '/product-placeholder.png'}
                       alt={product.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/product-placeholder.png';
+                      }}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <button

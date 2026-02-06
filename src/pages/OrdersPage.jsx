@@ -70,9 +70,8 @@ export default function OrdersPage({ onNavigate }) {
                   </div>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    statusColors[order.status]
-                  }`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[order.status]
+                    }`}
                 >
                   {statusLabels[order.status]}
                 </span>
@@ -88,6 +87,10 @@ export default function OrdersPage({ onNavigate }) {
                       key={index}
                       src={item.product.image}
                       alt={item.product.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/product-placeholder.png';
+                      }}
                       className="w-16 h-16 object-cover rounded-lg bg-[#F5F5F5]"
                     />
                   ))}

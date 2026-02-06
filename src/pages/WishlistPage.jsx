@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext.jsx';
 import { products } from '../data/mockData.js';
 import { Button } from '../components/ui/button.jsx';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '../utils/utils.js';
 
 export default function WishlistPage({ onNavigate }) {
   const { wishlist, toggleWishlist, addToCart } = useStore();
@@ -58,8 +59,12 @@ export default function WishlistPage({ onNavigate }) {
                 onClick={() => onNavigate('product-detail', { productId: product.id })}
               >
                 <img
-                  src={product.image}
+                  src={normalizeImageUrl(product.image)}
                   alt={product.name}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/product-placeholder.png';
+                  }}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <button
